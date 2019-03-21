@@ -1,0 +1,4 @@
+calendars = ["Google"]
+
+[Google]
+url = "https://calendar.google.com/calendar/ical/..."
