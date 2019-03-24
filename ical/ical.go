@@ -19,9 +19,9 @@ type Component struct {
 	Children []*Component
 }
 
-// ParseLine parses a single line of the above specification format
+// parseLine parses a single line of the above specification format
 // Handling the name, value, and parameter information
-func ParseLine(line string) (string, string, map[string]string) {
+func parseLine(line string) (string, string, map[string]string) {
 	delimIdx := strings.Index(line, ":")
 	if delimIdx == -1 {
 		panic("Attempting to parse invalid calendar format: " + line)
@@ -46,17 +46,17 @@ func ParseLine(line string) (string, string, map[string]string) {
 	return fieldName, fieldValue, params
 }
 
-// ParseLines parses each line in the calendar file. Building a linked
+// parseLines parses each line in the calendar file. Building a linked
 // component structure from begin to end.
-func ParseLines(lines []string, index int) (*Component, bool, int) {
-	name, value, params := ParseLine(lines[index])
+func parseLines(lines []string, index int) (*Component, bool, int) {
+	name, value, params := parseLine(lines[index])
 	switch name {
 	case "BEGIN": // BEGIN:VCALENDAR
 		component := new(Component)
 		component.Name = value
 		index = index + 1
 		for {
-			child, end, childIndex := ParseLines(lines, index)
+			child, end, childIndex := parseLines(lines, index)
 			// Found a matching END:... block
 			if end {
 				return component, false, childIndex
@@ -75,8 +75,8 @@ func ParseLines(lines []string, index int) (*Component, bool, int) {
 	}
 }
 
-// UnfoldLines unfolds any lines in the calendar file that contain linebreaks
-func UnfoldLines(data string) []string {
+// unfoldLines unfolds any lines in the calendar file that contain linebreaks
+func unfoldLines(data string) []string {
 	regex := regexp.MustCompile("([\r|\t| ]*\n[\r|\t| ]+)+")
 	unfolded := regex.ReplaceAllString(strings.TrimSpace(data), "")
 	return strings.Split(unfolded, "\n")
@@ -97,20 +97,30 @@ func ParseCalendar(name string, url string) *Component {
 
 	// Parse the calendar content
 	bytes, err := ioutil.ReadAll(response.Body)
-	lines := UnfoldLines(string(bytes))
-	component, _, _ := ParseLines(lines, 0)
+	lines := unfoldLines(string(bytes))
+	component, _, _ := parseLines(lines, 0)
 
 	log.Println("Parsed calendar: " + name)
 	return component
 }
 
 // GetComponentField attempts to find a child component within a component
-// and return the value
+// and return itself
 func GetComponentField(component *Component, name string) *Component {
-	for _, child := range component.Children {
-		if child.Name == name {
-			return child
+	components := GetComponentFields(component, []string{name})
+	return components[0]
+}
+
+// GetComponentFields attempts to find many children components within a component
+// and return them as a slice
+func GetComponentFields(component *Component, names []string) []*Component {
+	var components []*Component
+	for _, name := range names {
+		for _, child := range component.Children {
+			if child.Name == name {
+				components = append(components, child)
+			}
 		}
 	}
-	return nil
+	return components
 }
