@@ -20,12 +20,12 @@ func getTimestamp(start, end time.Time) string {
 	var startSuffix string
 	var endSuffix string
 
-	if start.Hour() > 12 {
+	if start.Hour() >= 12 {
 		startSuffix = "pm"
 	} else {
 		startSuffix = "am"
 	}
-	if end.Hour() > 12 {
+	if end.Hour() >= 12 {
 		endSuffix = "pm"
 	} else {
 		endSuffix = "am"
